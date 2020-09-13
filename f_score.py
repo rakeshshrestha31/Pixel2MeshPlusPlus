@@ -9,6 +9,7 @@ import tensorflow as tf
 import pprint
 import glob
 import os
+import json
 from modules.chamfer import nn_distance
 from modules.config import execute
 
@@ -54,6 +55,7 @@ if __name__ == '__main__':
                 '04090263': np.zeros(4), '04379243': np.zeros(4), '04530566': np.zeros(4), '02691156': np.zeros(4),
                 '02933112': np.zeros(4), '02958343': np.zeros(4), '03211117': np.zeros(4), '04256520': np.zeros(4),
                 '04401088': np.zeros(4)}
+    object_pred = {}
 
     index = 0
     total_num = len(xyz_list_path)
@@ -62,10 +64,13 @@ if __name__ == '__main__':
         ground = np.loadtxt(lab_path)[:, :3]
         predict = np.loadtxt(pred_path)
 
+        class_label = '_'.join(pred_path.split('/')[-1].split('_')[:3])
         class_id = pred_path.split('/')[-1].split('_')[0]
         length[class_id] += 1.0
         d1, i1, d2, i2 = sess.run([dist1, idx1, dist2, idx2], feed_dict={xyz1: predict, xyz2: ground})
-        sum_pred[class_id] += f_score(predict, ground, d1, i1, d2, i2, threshold)
+        scores = f_score(predict, ground, d1, i1, d2, i2, threshold)
+        sum_pred[class_id] += scores
+        object_pred[class_label] = scores.tolist()
 
         index += 1
         print('processed number', index, total_num)
@@ -74,6 +79,10 @@ if __name__ == '__main__':
     log_dir = os.path.join(args.save_path, args.name, 'logs')
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
+    json_path = os.path.join(log_dir, '{}_objects_f_score.json'.format(args.test_epoch))
+    with open(json_path, 'w') as f:
+        json.dump(object_pred, f, indent=5)
+
     log_path = os.path.join(log_dir, '{}_f_score.log'.format(args.test_epoch))
     print(log_path)
     logfile = open(log_path, 'a')
@@ -85,5 +94,7 @@ if __name__ == '__main__':
         print(item, name[item], length[item], ' '.join(map(str, score)))
         print(item, name[item], length[item], ' '.join(map(str, score)), file=logfile)
     print('-' * 80)
+    print('-' * 80, file=logfile)
     print('mean', 'all_data', 'total_number', np.mean(means, axis=0))
+    print('mean', 'all_data', 'total_number', np.mean(means, axis=0), file=logfile)
     sess.close()
