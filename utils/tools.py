@@ -103,16 +103,29 @@ def cameraMat(param):
 
 
 def camera_trans(camera_metadata, xyz):
-    c, o = cameraMat(camera_metadata)
-    points = xyz[:, :3]
-    pt_trans = points - o
-    pt_trans = tf.matmul(pt_trans, tf.transpose(c))
+    # c, o = cameraMat(camera_metadata)
+    # points = xyz[:, :3]
+    # pt_trans = points - o
+    # pt_trans = tf.matmul(pt_trans, tf.transpose(c))
+
+    T = tf.reshape(camera_metadata, [4, 4])
+    xyzw = tf.concat([xyz, tf.ones_like(xyz[:, 0:1])], -1)
+    pt_trans = tf.transpose(tf.matmul(
+        tf.matrix_inverse(T),
+        tf.transpose(xyzw)
+    ))[:, :3]
+
     return pt_trans
 
 
 def camera_trans_inv(camera_metadata, xyz):
-    c, o = cameraMat(camera_metadata)
-    inv_xyz = (tf.matmul(xyz, tf.matrix_inverse(tf.transpose(c)))) + o
+    # c, o = cameraMat(camera_metadata)
+    # inv_xyz = (tf.matmul(xyz, tf.matrix_inverse(tf.transpose(c)))) + o
+
+    T = tf.reshape(camera_metadata, [4, 4])
+    xyzw = tf.concat([xyz, tf.ones_like(xyz[:, 0:1])], -1)
+    inv_xyz = tf.transpose(tf.matmul(T, tf.transpose(xyzw)))[:, :3]
+
     return inv_xyz
 
 

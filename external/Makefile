@@ -1,9 +1,12 @@
 SHELL=/bin/bash
 
-nvcc=/usr/local/cuda-9.0/bin/nvcc
-cudalib=/usr/local/cuda-9.0/lib64
-TF_CFLAGS=-I/usr/local/lib/python3.5/dist-packages/tensorflow/include -D_GLIBCXX_USE_CXX11_ABI=0
-TF_LFLAGS=-L/usr/local/lib/python3.5/dist-packages/tensorflow -ltensorflow_framework
+nvcc=/usr/local/cuda-11.3/bin/nvcc # Find the nvcc file using find / -name nvcc
+# cudalib=/usr/local/cuda-11.3/targets/x86_64-linux/lib # Find folder this using find / -name libcudart.so
+# TF_CFLAGS=-I/home/rakesh/anaconda3/envs/p2mpp/lib/python3.6/site-packages/tensorflow/include -D_GLIBCXX_USE_CXX11_ABI=0
+# TF_LFLAGS=-L/home/rakesh/anaconda3/envs/p2mpp/lib/python3.6/site-packages/tensorflow -ltensorflow_framework
+cudalib=/home/rakesh/anaconda3/envs/p2mpp/lib # Find folder this using find / -name libcudart.so
+TF_CFLAGS=-I/home/rakesh/anaconda3/envs/p2mpp/lib/python3.6/site-packages/tensorflow_core/include -D_GLIBCXX_USE_CXX11_ABI=0
+TF_LFLAGS=-L/home/rakesh/anaconda3/envs/p2mpp/lib/python3.6/site-packages/tensorflow_core -ltensorflow_framework
 $(info $$TF_CFLAGS is ${TF_CFLAGS})
 $(info $$TF_LFLAGS is ${TF_LFLAGS})
 

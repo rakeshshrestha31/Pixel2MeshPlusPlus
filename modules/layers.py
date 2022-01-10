@@ -220,8 +220,8 @@ class GraphProjection(Layer):
             X = point_crrent[:, 0]
             Y = point_crrent[:, 1]
             Z = point_crrent[:, 2]
-            h = 248.0 * tf.divide(-Y, -Z) + 112.0
-            w = 248.0 * tf.divide(X, -Z) + 112.0
+            h = 193.3635 * tf.divide(-Y, -Z) + 112.0
+            w = 193.3635 * tf.divide(X, -Z) + 112.0
 
             h = tf.minimum(tf.maximum(h, 0), 223)
             w = tf.minimum(tf.maximum(w, 0), 223)
@@ -383,8 +383,8 @@ class LocalGraphProjection(Layer):
             X = point_crrent[:, 0]
             Y = point_crrent[:, 1]
             Z = point_crrent[:, 2]
-            h = 248.0 * tf.divide(-Y, -Z) + 112.0
-            w = 248.0 * tf.divide(X, -Z) + 112.0
+            h = 193.3635 * tf.divide(-Y, -Z) + 112.0
+            w = 193.3635 * tf.divide(X, -Z) + 112.0
 
             h = tf.minimum(tf.maximum(h, 0), 223)
             w = tf.minimum(tf.maximum(w, 0), 223)
