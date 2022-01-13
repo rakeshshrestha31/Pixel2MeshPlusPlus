@@ -89,7 +89,7 @@ class DataFetcher(threading.Thread):
             T_cam0_cam = T_cam0_world @ T_world_cam
             poses[idx] = T_cam0_cam.reshape((-1))
 
-        label_local = self.transform_label(label, poses[0])
+        label_local = self.transform_label(label, T_world_cam0)
         # self.debug(imgs, label, label_local, pkl_item)
 
         return imgs, label_local, poses, pkl_item, mesh
