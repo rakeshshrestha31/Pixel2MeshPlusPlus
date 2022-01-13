@@ -1,10 +1,12 @@
 # Copyright (C) 2019 Chao Wen, Yinda Zhang, Zhuwen Li, Yanwei Fu
 # All rights reserved.
 # This code is licensed under BSD 3-Clause License.
+from copy import deepcopy
 import numpy as np
 import tensorflow as tf
 import pickle
 import cv2
+import open3d as o3d
 
 
 def construct_feed_dict(pkl, placeholders):
@@ -139,3 +141,32 @@ def load_demo_image(demo_image_list):
         img_inp = img.astype('float32') / 255.0
         imgs[idx] = img_inp[:, :, :3]
     return imgs
+
+
+def normalize_coords(coords, model):
+    data_pcd = o3d.geometry.PointCloud()
+    data_pcd.points = o3d.utility.Vector3dVector(coords)
+
+    model_pcd = o3d.geometry.PointCloud()
+    model_pcd.points = o3d.utility.Vector3dVector(model)
+
+    model_scale = np.max(
+        model_pcd.get_axis_aligned_bounding_box().get_extent()
+    )
+    data_scale = np.max(
+        data_pcd.get_axis_aligned_bounding_box().get_extent()
+    )
+    scale = model_scale / data_scale
+
+    o3d_version = [int(i) for i in o3d.__version__.split('.')]
+    if o3d_version[0] == 0 and o3d_version[1] < 10:
+        scale_args = [scale]
+    else:
+        scale_args = [scale, np.asarray([0, 0, 0])]
+
+    data_pcd2 = deepcopy(data_pcd)
+    data_pcd2.translate(-data_pcd.get_center()) \
+                    .scale(*scale_args) \
+                    .translate(model_pcd.get_center())
+
+    return np.asarray(data_pcd2.points)

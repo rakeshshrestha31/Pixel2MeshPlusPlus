@@ -11,7 +11,7 @@ import os
 
 from modules.models_mvp2m import MeshNetMVP2M
 from utils.dataloader_ocrtoc import DataFetcher
-from utils.tools import construct_feed_dict
+from utils.tools import construct_feed_dict, normalize_coords
 from modules.config_ocrtoc import execute
 from utils.visualize import plot_scatter
 
@@ -108,9 +108,12 @@ def main(cfg):
             # Fetch training data
             # need [img, label, pose(camera meta data), dataID]
             img_all_view, labels, poses, data_id, mesh = data.fetch()
+            norm_coords = normalize_coords(pkl['coord'].copy(), labels[:, :3])
+
             feed_dict.update({placeholders['img_inp']: img_all_view})
             feed_dict.update({placeholders['labels']: labels})
             feed_dict.update({placeholders['cameras']: poses})
+            feed_dict.update({placeholders['features']: norm_coords})
             # ---------------------------------------------------------------
             _, dists, summaries, out1, out3, out3 = sess.run([model.opt_op, model.loss, model.merged_summary_op, model.output1, model.output2, model.output3], feed_dict=feed_dict)
             # ---------------------------------------------------------------
