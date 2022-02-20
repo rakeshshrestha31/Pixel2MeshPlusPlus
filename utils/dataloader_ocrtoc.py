@@ -29,14 +29,13 @@ class DataFetcher(threading.Thread):
 
         self.samples = [
             {
-                'model_id': sample['model_id'],
+                'model_id': sample['scene'],
                 'images': images,
-                'category': sample['category'],
+                'category': 'TODO',
                 'triplet_id': triplet_id
             }
             for sample in split_data
-            for triplet_id, images in enumerate(sample['images'][:50])
-            if sample['category'].lower() in ['sofa', 'chair'] # , 'cabinet/shelf/desk']
+            for triplet_id, images in enumerate(sample['image_ids'])
         ]
 
         self.index = 0
@@ -47,24 +46,28 @@ class DataFetcher(threading.Thread):
     def work(self, idx):
         sample = self.samples[idx]
         pkl_item = '_'.join([
-            sample['model_id'], str(sample['triplet_id']), 'gt_labels.dat'
+            sample['model_id'],
+            '-'.join([str(i) for i in sample['images']]),
+            'meshmvs_gt_labels.dat'
         ])
-        pkl_path = os.path.join(self.data_root, sample['model_id'], 'gt_labels.dat')
-        pkl = pickle.load(open(pkl_path, 'rb'), encoding='bytes')
-        if self.is_val:
-            label = pkl[1]
-        else:
-            label = pkl
+        pkl_path = os.path.join(self.data_root, sample['model_id'], 'meshmvs_gt_labels.dat')
+        with open(pkl_path, 'rb') as f:
+            pkl = pickle.load(f) # , encoding='bytes')
+        label = pkl
+
         # load image file
         category = sample['category']
         item_id = sample['model_id'] + '_' + str(sample['triplet_id'])
 
         img_path = os.path.join(
-            self.data_root, sample['model_id'], 'segmented_color'
+            self.data_root, sample['model_id'],
+            'meshmvs_training_images'
         )
-        camera_meta_data = np.loadtxt(os.path.join(
-            self.data_root, sample['model_id'], 'rendering_metadata.txt'
-        ))
+
+        camera_meta_data = self.read_camera_parameters(
+            self.data_root, sample['model_id']
+        )
+        extrinsics = camera_meta_data['extrinsics']
 
         if self.mesh_root is not None:
             mesh = np.loadtxt(os.path.join(self.mesh_root, category + '_' + item_id + '_00_predict.xyz'))
@@ -73,19 +76,19 @@ class DataFetcher(threading.Thread):
 
         imgs = np.zeros((3, 224, 224, 3))
         poses = np.zeros((3, 16))
-        T_world_cam0 = camera_meta_data[int(sample['images'][0])].reshape((4, 4))
+        T_world_cam0 = extrinsics[int(sample['images'][0])].reshape((4, 4))
         T_cam0_world = np.linalg.inv(T_world_cam0)
 
         for idx, view in enumerate(sample['images']):
             img = cv2.imread(
-                os.path.join(img_path, f'segmented_color_{view}.png'),
+                os.path.join(img_path, f'color_{view}.png'),
                 cv2.IMREAD_UNCHANGED
             )
             img[np.where(img[:, :, 3] == 0)] = 255
             img = cv2.resize(img, (224, 224))
             img_inp = img.astype('float32') / 255.0
             imgs[idx] = img_inp[:, :, :3]
-            T_world_cam = camera_meta_data[int(view)].reshape((4, 4))
+            T_world_cam = extrinsics[int(view)].reshape((4, 4))
             T_cam0_cam = T_cam0_world @ T_world_cam
             poses[idx] = T_cam0_cam.reshape((-1))
 
@@ -95,13 +98,56 @@ class DataFetcher(threading.Thread):
         return imgs, label_local, poses, pkl_item, mesh
 
     @staticmethod
+    def read_camera_parameters(data_dir, scene_name):
+        camera_poses = np.load(
+            os.path.join(data_dir, scene_name, 'meshmvs_camera_poses.npy'),
+            allow_pickle=True
+        ).item()
+
+        object_poses = np.load(
+            os.path.join(data_dir, scene_name, 'meshmvs_object_poses.npy'),
+            allow_pickle=True
+        ).item()
+        object_name, object_pose = next(iter(object_poses.items()))
+
+        extrinsics = DataFetcher.process_extrinsics(camera_poses, object_pose)
+
+        return {
+            'extrinsics': extrinsics, 'object_name': object_name
+        }
+
+    @staticmethod
+    def process_extrinsics(camera_poses, object_pose):
+        extrinsics = {}
+
+        T_EUS_EDN = np.asarray([
+            [1.0,  0.0,  0.0, 0.0],
+            [0.0, -1.0,  0.0, 0.0],
+            [0.0,  0.0, -1.0, 0.0],
+            [0.0,  0.0,  0.0, 1.0]
+        ])
+        T_EDN_EUS = T_EUS_EDN.T
+
+        T_EDN_obj = object_pose
+        T_obj_EDN = np.linalg.inv(T_EDN_obj)
+
+        # object centric pose, EUS oriented camera
+        for cam_idx, T_EDN_cam in camera_poses.items():
+            T_obj_cam = T_obj_EDN @ T_EDN_cam
+            # to EUS from EDN
+            T_obj_cam = T_obj_cam @ T_EDN_EUS
+            extrinsics[cam_idx] = T_obj_cam.astype(np.float32)
+
+        return extrinsics
+
+    @staticmethod
     def debug(imgs, label_world, label_local, data_id):
         X = label_local[:, 0]
         Y = label_local[:, 1]
         Z = label_local[:, 2]
 
-        h = (193.3635 * np.divide(-Y, -Z)) + 112.0
-        w = (193.3635 * np.divide(X, -Z)) + 112.0
+        h = (248.0 * np.divide(-Y, -Z)) + 112.0
+        w = (248.0 * np.divide(X, -Z)) + 112.0
 
         h = np.clip(h, 0, 223)
         w = np.clip(w, 0, 223)
@@ -115,11 +161,8 @@ class DataFetcher(threading.Thread):
         debug_img = (debug_img * 255).astype(np.uint8)
         cv2.imwrite(f'{data_id}_debug_img.png', debug_img)
 
-        with open(f'{data_id}_world.dat', 'wb') as f:
-            pickle.dump(label_world, f)
-
-        with open(f'{data_id}_local.dat', 'wb') as f:
-            pickle.dump(label_local, f)
+        np.savetxt(f'{data_id}_world.xyz', label_world)
+        np.savetxt(f'{data_id}_local.xyz', label_local)
 
     @staticmethod
     def transform_label(label, T_world_cam):
