@@ -81,9 +81,9 @@ class Model(object):
         print('Model restored from file: {}, epoch {}'.format(save_path, step))
 
 
-class MeshNet(Model):
+class MeshNetMVP2M(Model):
     def __init__(self, placeholders, args, **kwargs):
-        super(MeshNet, self).__init__(**kwargs)
+        super(MeshNetMVP2M, self).__init__(**kwargs)
 
         self.inputs = placeholders['features']
         self.placeholders = placeholders
@@ -104,7 +104,7 @@ class MeshNet(Model):
     def loadcnn(self, sess=None, ckpt_path=None, step=None):
         if not sess:
             raise AttributeError('TensorFlow session not provided.')
-        variables_to_restore = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='meshnet/cnn/')
+        variables_to_restore = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='meshnetmvp2m/cnn/')
         var_list = {var.name: var for var in variables_to_restore}
         saver = tf.train.Saver(var_list)
         save_path = os.path.join(ckpt_path, '{}.ckpt-{}'.format(self.name, step))

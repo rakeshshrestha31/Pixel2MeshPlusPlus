@@ -70,7 +70,8 @@ class DataFetcher(threading.Thread):
         extrinsics = camera_meta_data['extrinsics']
 
         if self.mesh_root is not None:
-            mesh = np.loadtxt(os.path.join(self.mesh_root, category + '_' + item_id + '_00_predict.xyz'))
+            mesh_path = os.path.join(self.mesh_root, pkl_item.replace('.dat', '_predict.xyz'))
+            mesh = np.loadtxt(mesh_path)
         else:
             mesh = None
 

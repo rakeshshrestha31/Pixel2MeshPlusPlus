@@ -1,0 +1,23 @@
+is_debug: no
+# 3 + 3*(512+256+128+64)
+feat_dim: 2883
+# 3 + 3*(16+32+64)
+stage2_feat_dim: 339
+name: 'refine_p2mpp'
+save_path: 'results_ocrtoc_real'
+# about cnn
+load_cnn: yes
+pre_trained_cnn_path: 'results_ocrtoc_real/coarse_mvp2m/models'
+cnn_step: 9
+# train
+lr: 1e-5
+epochs: 10
+init_epoch: 9
+gpu_id: 0
+restore: false
+save_path: 'results_ocrtoc_real'
+data_root: '/home/rakesh/workspace/alibaba_3d_benchmark/toc_dataset/meshmvs_ocrtoc_dataset'
+train_mesh_root: 'results_ocrtoc_real/coarse_mvp2m/coarse_intermediate/9'
+# test
+test_epoch: 10
+test_mesh_root: 'results_ocrtoc_real/coarse_mvp2m/predict/50'
