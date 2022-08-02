@@ -16,7 +16,7 @@ init_epoch: 9
 gpu_id: 0
 restore: false
 save_path: 'results_ocrtoc_real'
-data_root: '/home/rakesh/workspace/alibaba_3d_benchmark/toc_dataset/meshmvs_ocrtoc_dataset'
+data_root: '/local-scratch6/rakesh/meshmvs_ocrtoc_dataset_full'
 train_mesh_root: 'results_ocrtoc_real/coarse_mvp2m/coarse_intermediate/9'
 # test
 test_epoch: 10

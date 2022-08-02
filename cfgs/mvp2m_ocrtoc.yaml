@@ -8,4 +8,4 @@ is_debug: no
 feat_dim: 2883
 name: 'coarse_mvp2m'
 save_path: 'results_ocrtoc'
-data_root: '/home/rakesh/workspace/alibaba_3d_benchmark/3d-future/ocrtoc-rendered'
+data_root: '/local-scratch6/rakesh/meshmvs_ocrtoc_dataset_full'
